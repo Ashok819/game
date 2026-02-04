@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Orbit Clean</title>
+
+<style>
+body{
+margin:0;
+overflow:hidden;
+background:#0a0a0e;
+font-family:sans-serif;
+touch-action:none;
+}
+
+canvas{display:block;}
+
+#score{
+position:fixed;
+top:30px;
+left:50%;
+transform:translateX(-50%);
+color:#e0f0ff;
+font-size:40px;
+font-weight:bold;
+}
+
+#gameOver{
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:rgba(0,0,0,0.9);
+padding:40px;
+border:2px solid #444;
+display:none;
+text-align:center;
+color:#ddd;
+}
+</style>
+</head>
+
+<body>
+
+<div id="score">0</div>
+
+<div id="gameOver">
+<h1 style="color:#ff4d4d;margin:0;">GAME OVER</h1>
+<h2 id="final">Score: 0</h2>
+<button onclick="location.reload()">Restart</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+let w,h,cx,cy;
+function resize(){
+w=canvas.width=innerWidth;
+h=canvas.height=innerHeight;
+cx=w/2;
+cy=h/2;
+}
+resize();
+addEventListener("resize",resize);
+
+// SETTINGS
+const radius=170;
+const gapSize=1.2; // large gap
+
+let rotation=0;
+let score=0;
+let gameOver=false;
+
+let ball={
+x:cx,
+y:cy-60,
+vx:5,
+vy:4,
+r:8
+};
+
+function endGame(){
+gameOver=true;
+document.getElementById("gameOver").style.display="block";
+document.getElementById("final").innerText="Score: "+score;
+}
+
+function updateBall(){
+ball.x+=ball.vx;
+ball.y+=ball.vy;
+
+let dx=ball.x-cx;
+let dy=ball.y-cy;
+let dist=Math.sqrt(dx*dx+dy*dy);
+
+if(dist+ball.r>=radius){
+
+let angle=Math.atan2(dy,dx);
+
+let diff=Math.atan2(
+Math.sin(angle-rotation),
+Math.cos(angle-rotation)
+);
+
+// escape through gap
+if(Math.abs(diff)<gapSize/2){
+endGame();
+return;
+}
+
+// normal bounce
+let nx=dx/dist;
+let ny=dy/dist;
+let dot=ball.vx*nx+ball.vy*ny;
+
+ball.vx-=2*dot*nx;
+ball.vy-=2*dot*ny;
+
+score++;
+document.getElementById("score").innerText=score;
+}
+}
+
+function drawCircle(){
+ctx.save();
+ctx.translate(cx,cy);
+ctx.rotate(rotation);
+
+ctx.strokeStyle="#cccccc";
+ctx.lineWidth=4;
+ctx.beginPath();
+ctx.arc(0,0,radius,gapSize/2,Math.PI*2-gapSize/2);
+ctx.stroke();
+
+ctx.restore();
+}
+
+function drawBall(){
+ctx.beginPath();
+ctx.fillStyle="#66ccff";
+ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+ctx.fill();
+}
+
+function loop(){
+if(gameOver) return;
+
+// clean clear (no trail)
+ctx.clearRect(0,0,w,h);
+
+rotation+=0.02;
+
+updateBall();
+drawCircle();
+drawBall();
+
+requestAnimationFrame(loop);
+}
+
+function reverse(){
+if(gameOver) return;
+ball.vx*=-1;
+ball.vy*=-1;
+}
+
+addEventListener("mousedown",reverse);
+addEventListener("touchstart",reverse);
+
+loop();
+</script>
+
+</body>
+</html>
